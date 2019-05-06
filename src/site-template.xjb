@@ -1,0 +1,22 @@
+<bindings xmlns="http://java.sun.com/xml/ns/jaxb"
+          xmlns:xsi="http://www.w3.org/2000/10/XMLSchema-instance"
+          xmlns:xs="http://www.w3.org/2001/XMLSchema"
+          version="2.1">
+    <bindings schemaLocation="SCL_IED.xsd" version="1.0">
+        <!-- Customise the package name -->
+        <schemaBindings>
+            <package name="ru.smarteps.scl"/>
+        </schemaBindings>
+
+        <!-- rename the value element -->
+        <bindings node= "//xs:schema [@targetNamespace='http://www.iec.ch/61850/2006/SCL']">
+        <bindings node=".//xs:complexType [@name='tSMVSettings']"> 
+	    <bindings node=".//xs:extension [@base='tServiceSettings']">
+            <bindings node="xs:attribute[@name='smpRate']">
+                <property name="SmpRateAttribute"/>
+             </bindings>
+         </bindings> 
+        </bindings>
+        </bindings>
+    </bindings>
+</bindings>

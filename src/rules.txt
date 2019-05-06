@@ -1,0 +1,2 @@
+@prefix: <http://www.semanticweb.org/user/ontologies/2018/4/ASPPRZ#> .
+[rule1:isProtectedBy(?x, ?y) ^ hasTerminal(?x, ?z)-> useTerminal(?y, ?z)]
