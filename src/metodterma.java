@@ -1,12 +1,16 @@
-import org.apache.jena.ontology.Individual;
-import org.apache.jena.ontology.ObjectProperty;
-import org.apache.jena.ontology.OntClass;
-import org.apache.jena.ontology.OntModel;
+
+import org.apache.jena.datatypes.RDFDatatype;
+import org.apache.jena.datatypes.xsd.XSDDatatype;
+import org.apache.jena.ontology.*;
+import org.apache.jena.rdf.model.ResourceFactory;
+import org.apache.jena.riot.thrift.wire.RDF_Literal;
+import org.apache.jena.vocabulary.XSD;
 import ru.smarteps.scl.TConductingEquipment;
 import ru.smarteps.scl.TTerminal;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 
 public class metodterma {
@@ -14,7 +18,7 @@ public class metodterma {
     private static List<String> cNN;
     private static List<String> cCN;
 
-    public static void MetodTerm(TConductingEquipment conductingEquipment, Individual inda, ObjectProperty hasCN, ObjectProperty hasTerminal, OntModel model, String NS) {
+    public static void MetodTerm(TConductingEquipment conductingEquipment, Individual inda, ObjectProperty hasCN, ObjectProperty hasTerminal, DatatypeProperty hasName, OntModel model, String NS, Set<Individual> namesIndividual) {
         Terminals = conductingEquipment.getTerminal();
 
         OntClass TerminalClass = model.getOntClass(NS + "Terminal");
@@ -24,7 +28,12 @@ public class metodterma {
             String term = Terminals.get(i).getName() + "_" + conductingEquipment.getName();
             String CN = conductingEquipment.getTerminal().get(i).getConnectivityNode();
             Individual CNDIS = model.createIndividual(NS + CN, connectivityNodeClass);
+            namesIndividual.add(CNDIS);
+           //  CNDIS.addProperty(hasName, CN ,XSDDatatype.XSDstring);
+           //  CNDIS.addProperty(hasName, k+"", XSDDatatype.XSDinteger);
+            //model.add(CNDIS, hasName, ResourceFactory.createTypedLiteral(CN, XSDDatatype.XSDstring);
             Individual terminal = model.createIndividual(NS + term, TerminalClass);
+            namesIndividual.add(terminal);
             inda.addProperty(hasCN, CNDIS);
             inda.addProperty(hasTerminal, terminal);
 

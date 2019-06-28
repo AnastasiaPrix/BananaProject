@@ -8,7 +8,9 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 
+import org.apache.cassandra.streaming.StreamOut;
 import org.apache.jena.base.Sys;
+import org.apache.jena.datatypes.xsd.XSDDatatype;
 import org.apache.jena.ontology.*;
 import org.apache.jena.query.*;
 import org.apache.jena.rdf.model.*;
@@ -17,6 +19,8 @@ import org.apache.jena.reasoner.ReasonerRegistry;
 import org.apache.jena.reasoner.rulesys.GenericRuleReasoner;
 import org.apache.jena.reasoner.rulesys.Rule;
 import org.apache.jena.util.FileManager;
+import org.mindswap.pellet.jena.PelletReasonerFactory;
+import org.omg.Messaging.SYNC_WITH_TRANSPORT;
 import ru.smarteps.scl.*;
 import org.apache.commons.lang3.StringUtils;
 
@@ -81,22 +85,34 @@ public class TEST {
     private static Map<String, List<String>> efn = new HashMap<>();
     private static Map<String, List<String>> lin = new HashMap<>();
     private static Map<String, List<String>> cab = new HashMap<>();
+    public static Set<Individual> namesIndividual = new HashSet<>();
+    public static List<Integer> voltageValues = new ArrayList<>();
+    public static Set<Individual> voltageeIndividual = new HashSet<>();
 
 
     //public static Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
 
     public static void main(String[] args) {
-        OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MINI_RULE_INF); // Any Spec
-        String inputOntFilename = "C:\\Users\\diana\\Desktop\\SCL\\ont1_1.rdf";
-        String NS = "http://www.semanticweb.org/anast/ontologies/2019/3/untitled-ontology-22#";
-//        use the FileManager to find the input scdFile
+        // создание пустой модели
+        OntModel model = ModelFactory.createOntologyModel(OntModelSpec.OWL_MEM_MINI_RULE_INF);
+        // путь к файлу с онтологией
+       // String inputOntFilename = "C:\\Users\\anast\\Desktop\\magistratura\\project\\ontologies\\ont1_1_4.rdf";
+        String inputOntFilename = "C:\\Users\\anast\\Desktop\\magistratura\\project\\ontologies\\ont1_1_3.rdf";
+
+//        ипользование менеджера файлов для нахождения входного файла
         InputStream in = FileManager.get().open(inputOntFilename);
         if (in == null) {
             throw new IllegalArgumentException(
                     "File: " + inputOntFilename + " not found");
         }
+        // считывание данных из файла в модель
         model.read(in, null);
-        File scdFile = new File("C:\\Users\\diana\\2semestrAlg\\EX\\ClassCreator-master\\ClassCreator-master\\src\\V1.scd");
+
+
+
+
+        File scdFile = new File("C:\\Users\\anast\\Desktop\\PIGv7.scd");
+
         SCL tsub = null;
         try {
             JAXBContext jaxbContext = JAXBContext.newInstance(SCL.class);
@@ -107,6 +123,7 @@ public class TEST {
             e.printStackTrace();
         }
 
+        String NS = "http://www.semanticweb.org/anast/ontologies/2019/3/untitled-ontology-22#";
         OntClass voltageLevelClass = model.getOntClass(NS + "VoltageLevel"); ///ON VOOBSHE NUGEN??????
         OntClass TerminalClass = model.getOntClass(NS + "Terminal");
         OntClass connectivityNodeClass = model.getOntClass(NS + "ConnectivityNode");
@@ -132,19 +149,12 @@ public class TEST {
         OntClass ZMOTClass = model.getOntClass(NS + "ZMOT");
         OntClass ZREAClass = model.getOntClass(NS + "ZREA");
         OntClass TCTRClass = model.getOntClass(NS + "TCTR");
-        OntClass TVTRClass = model.getOntClass(NS + "TVTR");
-//        OntClass Class_6 = model.getOntClass(NS + "6");
-//        OntClass Class_10 = model.getOntClass(NS + "10");
-//        OntClass Class_15 = model.getOntClass(NS + "15");
-//        OntClass Class_20 = model.getOntClass(NS + "20");
-//        OntClass Class_35 = model.getOntClass(NS + "35");
-//        OntClass Class_110 = model.getOntClass(NS + "110");
-//        OntClass Class_220 = model.getOntClass(NS + "220");
-//        OntClass Class_330 = model.getOntClass(NS + "330");
-//        OntClass Class_500 = model.getOntClass(NS + "500");
-//        OntClass Class_750 = model.getOntClass(NS + "750");
 
+        // считывание класса из модели
+        OntClass TVTRClass = model.getOntClass(NS + "TVTR");
+        // считывние свойства из модели
         ObjectProperty hasVoltageLevel = model.getObjectProperty(NS + "hasVoltageLevel");
+
         ObjectProperty hasCN = model.getObjectProperty(NS + "hasCN");
         ObjectProperty hasTerminal = model.getObjectProperty(NS + "hasTerminal");
         ObjectProperty hasPower = model.getObjectProperty(NS + "hasPower");
@@ -153,41 +163,43 @@ public class TEST {
         ObjectProperty connectedWith = model.getObjectProperty(NS + "connectedWith");
         ObjectProperty partOf = model.getObjectProperty(NS + "partOf");
 
-//        Individual LOL = model.createIndividual(NS + "AT1", ATR);
-//        Individual KEK = model.createIndividual(NS + "AT1", ATR);
-//        Individual Cheburek = model.createIndividual(NS + "T2", TTR);
-        Individual Q1 = model.createIndividual(NS + "Q1", BusBreakerClass);
 
-        Individual TA1 = model.createIndividual(NS + "TA1", TCTRClass);
-        Individual TA2 = model.createIndividual(NS + "TA2", TCTRClass);
-        Individual CN1 = model.createIndividual(NS + "N1", connectivityNodeClass);
-        Individual CN2 = model.createIndividual(NS + "N1", connectivityNodeClass);
-        Individual CN3 = model.createIndividual(NS + "N2", connectivityNodeClass);
-        Q1.addProperty(hasCN, CN1);
-        TA1.addProperty(hasCN, CN2);
-        TA1.addProperty(hasCN, CN3);
-        TA2.addProperty(hasCN, CN3);
-
+        DatatypeProperty hasName = model.getDatatypeProperty(NS + "hasName");
+        DatatypeProperty hasVoltage = model.getDatatypeProperty(NS + "hasVoltage");
+        DatatypeProperty voltageType = model.getDatatypeProperty(NS + "voltageType");
 
         List<TSubstation> substations = tsub.getSubstation();
         mySubstation = substations.get(0);
-
+        String v = "v_";
         for (TVoltageLevel voltageLevel : mySubstation.getVoltageLevel()) {
             voltage = voltageLevel.getVoltage();
-            String VOL = voltage.getValue().toString();
+            String VOL1 = voltage.getValue().toString();
+            voltageValues.add(Integer.parseInt(VOL1));
+            String VOL =v.concat(VOL1);
             OntClass U = model.getOntClass(NS + VOL);
             Individual voltageIndividual = model.createIndividual(NS + voltage.getValue().toString(), U);
+            voltageIndividual.addProperty(hasVoltage,VOL1,XSDDatatype.XSDinteger);
+            voltageeIndividual.add(voltageIndividual);
+            namesIndividual.add(voltageIndividual);
             for (TBay bay : voltageLevel.getBay()) {
                 TText text = bay.getText();
                 for (TConnectivityNode connectivityNode : bay.getConnectivityNode()) {
                     List<String> CNode = Arrays.asList(connectivityNode.getPathName());
                     Individual cNodeIndividual = model.createIndividual(NS + connectivityNode.getPathName(), connectivityNodeClass);
+                    namesIndividual.add(cNodeIndividual);
                 }
                 if (text != null) {
                     if (text.getContent().toString().equals("[Bus]")) {
                         Individual busIndividual = model.createIndividual(NS + bay.getName(), BusClass);
                         busIndividual.addProperty(hasVoltageLevel, voltageIndividual);
-                        busIndividual.addProperty(hasCN, bay.getConnectivityNode().toString());
+                        busIndividual.addProperty(hasVoltage,VOL1,XSDDatatype.XSDinteger);
+                        for (TConnectivityNode node: bay.getConnectivityNode()){
+                            Individual cNodeB = model.createIndividual(NS+node.getPathName(), connectivityNodeClass);
+                            busIndividual.addProperty(hasCN, cNodeB  );
+                        }
+
+                       // busIndividual.addProperty(hasCN, bay.getConnectivityNode().toString());
+                        namesIndividual.add(busIndividual);
                     }
                 }
                 for (TConductingEquipment conductingEquipment : bay.getConductingEquipment()) {
@@ -196,7 +208,9 @@ public class TEST {
 //                      String currentEFN = conductingEquipment.getName();
                         Individual EFNIndividual = model.createIndividual(NS + conductingEquipment.getName(), YEFNClass);
                         EFNIndividual.addProperty(hasVoltageLevel, voltageIndividual);
-                        metodterma.MetodTerm(conductingEquipment, EFNIndividual, hasCN, hasTerminal, model, NS); //sozdaet hasCN, hasTerminal, individi terminal
+                        EFNIndividual.addProperty(hasVoltage,VOL1, XSDDatatype.XSDinteger);
+                        namesIndividual.add(EFNIndividual);
+                        metodterma.MetodTerm(conductingEquipment, EFNIndividual, hasCN, hasTerminal, hasName, model, NS, namesIndividual); //sozdaet hasCN, hasTerminal, individi terminal
 //                          hasCN, hasTerminal, hasVoltageLevel, (partOf  ???)
                         //efnTerminals = conductingEquipment.getTerminal();
                         //List<Individual> efnTerminalIndividual = new ArrayList<>();
@@ -217,7 +231,9 @@ public class TEST {
                     if (basicTypes.contains("PSH")) {
                         Individual PSHIndividual = model.createIndividual(NS + conductingEquipment.getName(), YPSHClass);
                         PSHIndividual.addProperty(hasVoltageLevel, voltageIndividual);
-                        metodterma.MetodTerm(conductingEquipment, PSHIndividual, hasCN, hasTerminal, model, NS); //sozdaet hasCN, hasTerminal, individi terminal
+                        PSHIndividual.addProperty(hasVoltage,VOL1, XSDDatatype.XSDinteger);
+                        namesIndividual.add(PSHIndividual);
+                        metodterma.MetodTerm(conductingEquipment, PSHIndividual, hasCN, hasTerminal, hasName, model, NS, namesIndividual); //sozdaet hasCN, hasTerminal, individi terminal
 //                          hasCN, hasTerminal, hasVoltageLevel, (partOf  ???)
                         //efnTerminals = conductingEquipment.getTerminal();
                         //List<Individual> efnTerminalIndividual = new ArrayList<>();
@@ -242,29 +258,39 @@ public class TEST {
                             if (TEXT2.equals("[BusBreaker]")) {
                                 Individual BusBreakerIndividual = model.createIndividual(NS + conductingEquipment.getName(), BusBreakerClass);
                                 BusBreakerIndividual.addProperty(hasVoltageLevel, voltageIndividual);
-                                metodterma.MetodTerm(conductingEquipment, BusBreakerIndividual, hasCN, hasTerminal, model, NS);
+                                BusBreakerIndividual.addProperty(hasVoltage,VOL1, XSDDatatype.XSDinteger);
+                                namesIndividual.add(BusBreakerIndividual);
+                                metodterma.MetodTerm(conductingEquipment, BusBreakerIndividual, hasCN, hasTerminal, hasName, model, NS, namesIndividual);
                             }
                             if (TEXT2.equals("[bypassBreaker]")) {
                                 Individual bypassBreakerIndividual = model.createIndividual(NS + conductingEquipment.getName(), bypassBreakerClass);
                                 bypassBreakerIndividual.addProperty(hasVoltageLevel, voltageIndividual);
-                                metodterma.MetodTerm(conductingEquipment, bypassBreakerIndividual, hasCN, hasTerminal, model, NS);
+                                bypassBreakerIndividual.addProperty(hasVoltage,VOL1, XSDDatatype.XSDinteger);
+                                namesIndividual.add(bypassBreakerIndividual);
+                                metodterma.MetodTerm(conductingEquipment, bypassBreakerIndividual, hasCN, hasTerminal, hasName, model, NS, namesIndividual);
                             }
                             if (TEXT2.equals("[selectionalizingBreaker]")) {
                                 Individual selBrIndividual = model.createIndividual(NS + conductingEquipment.getName(), selectionalizingBreakerClass);
                                 selBrIndividual.addProperty(hasVoltageLevel, voltageIndividual);
-                                metodterma.MetodTerm(conductingEquipment, selBrIndividual, hasCN, hasTerminal, model, NS);
+                                selBrIndividual.addProperty(hasVoltage,VOL1, XSDDatatype.XSDinteger);
+                                namesIndividual.add(selBrIndividual);
+                                metodterma.MetodTerm(conductingEquipment, selBrIndividual, hasCN, hasTerminal, hasName, model, NS, namesIndividual);
                             }
                             if (TEXT2.equals("[fiderBreaker]")) {
                                 Individual fiderBreakerIndividual = model.createIndividual(NS + conductingEquipment.getName(), fiderBreakerClass);
                                 fiderBreakerIndividual.addProperty(hasVoltageLevel, voltageIndividual);
-                                metodterma.MetodTerm(conductingEquipment, fiderBreakerIndividual, hasCN, hasTerminal, model, NS);
+                                fiderBreakerIndividual.addProperty(hasVoltage,VOL1, XSDDatatype.XSDinteger);
+                                namesIndividual.add(fiderBreakerIndividual);
+                                metodterma.MetodTerm(conductingEquipment, fiderBreakerIndividual, hasCN, hasTerminal, hasName, model, NS, namesIndividual);
                             }
                         }
                     }
                     if (basicTypes.contains("DIS")) {
                         Individual XSWIIndividual = model.createIndividual(NS + conductingEquipment.getName(), XSWIClass);
                         XSWIIndividual.addProperty(hasVoltageLevel, voltageIndividual);
-                       metodterma.MetodTerm(conductingEquipment, XSWIIndividual, hasCN, hasTerminal, model, NS);
+                        XSWIIndividual.addProperty(hasVoltage,VOL1, XSDDatatype.XSDinteger);
+                        namesIndividual.add(XSWIIndividual);
+                       metodterma.MetodTerm(conductingEquipment, XSWIIndividual, hasCN, hasTerminal, hasName, model, NS, namesIndividual);
 //                        disTerminals = conductingEquipment.getTerminal();
 //                        List<Individual> disTerminalIndividual = new ArrayList<>();
 //                        List<Individual> disCNNsIndividual = new ArrayList<>();
@@ -287,7 +313,9 @@ public class TEST {
                     if (basicTypes.contains("CAB")) {
                         Individual CABIndividual = model.createIndividual(NS + conductingEquipment.getName(), ZCABClass);
                         CABIndividual.addProperty(hasVoltageLevel, voltageIndividual);
-                        metodterma.MetodTerm(conductingEquipment, CABIndividual, hasCN, hasTerminal, model, NS);
+                        CABIndividual.addProperty(hasVoltage,VOL1, XSDDatatype.XSDinteger);
+                        namesIndividual.add(CABIndividual);
+                        metodterma.MetodTerm(conductingEquipment, CABIndividual, hasCN, hasTerminal, hasName, model, NS, namesIndividual);
                         //String currentCAB = conductingEquipment.getName();
                         //__________________________________________________________________________________
                         //PARSING CAB
@@ -311,12 +339,15 @@ public class TEST {
                     if (basicTypes.contains("GIL")) {
                         Individual GILIndividual = model.createIndividual(NS + conductingEquipment.getName(), ZGILClass);
                         GILIndividual.addProperty(hasVoltageLevel, voltageIndividual);
-                       metodterma.MetodTerm(conductingEquipment, GILIndividual, hasCN, hasTerminal, model, NS);
+                        GILIndividual.addProperty(hasVoltage,VOL1, XSDDatatype.XSDinteger);
+                        namesIndividual.add(GILIndividual);
+                       metodterma.MetodTerm(conductingEquipment, GILIndividual, hasCN, hasTerminal, hasName, model, NS, namesIndividual);
                         for (TLNode gillnode : conductingEquipment.getLNode()) {
                             List<String> LTClass = gillnode.getLnClass();
                             if (LTClass.contains("YPSH")) {
                                 Individual YPSHIndividual = model.createIndividual(NS + gillnode.getLnClass().toString(), YPSHClass);
                                 YPSHIndividual.addProperty(partOf, GILIndividual);
+                                namesIndividual.add(YPSHIndividual);
                             }
                         }
                         // String currentGIL = conductingEquipment.getName();
@@ -342,7 +373,9 @@ public class TEST {
                     if (basicTypes.contains("LIN")) {
                         Individual LINIndividual = model.createIndividual(NS + conductingEquipment.getName(), ZLINClass);
                         LINIndividual.addProperty(hasVoltageLevel, voltageIndividual);
-                        metodterma.MetodTerm(conductingEquipment, LINIndividual, hasCN, hasTerminal, model, NS);
+                        LINIndividual.addProperty(hasVoltage,VOL1, XSDDatatype.XSDinteger);
+                        namesIndividual.add(LINIndividual);
+                        metodterma.MetodTerm(conductingEquipment, LINIndividual, hasCN, hasTerminal, hasName, model, NS, namesIndividual);
                         //String currentLIN = conductingEquipment.getName();
                         //__________________________________________________________________________________
                         //PARSING LIN
@@ -366,12 +399,16 @@ public class TEST {
                     if (basicTypes.contains("IFL")) {
                         Individual IFLIndividual = model.createIndividual(NS + conductingEquipment.getName(), IFLClass);
                         IFLIndividual.addProperty(hasVoltageLevel, voltageIndividual);
-                        metodterma.MetodTerm(conductingEquipment, IFLIndividual, hasCN, hasTerminal, model, NS);
+                        IFLIndividual.addProperty(hasVoltage,VOL1, XSDDatatype.XSDinteger);
+                        namesIndividual.add(IFLIndividual);
+                        metodterma.MetodTerm(conductingEquipment, IFLIndividual, hasCN, hasTerminal, hasName, model, NS, namesIndividual);
                     }
                     if (basicTypes.contains("CAP")) {
                         Individual CAPIndividual = model.createIndividual(NS + conductingEquipment.getName(), ZCAPClass);
                         CAPIndividual.addProperty(hasVoltageLevel, voltageIndividual);
-                        metodterma.MetodTerm(conductingEquipment, CAPIndividual, hasCN, hasTerminal, model, NS);
+                        CAPIndividual.addProperty(hasVoltage,VOL1, XSDDatatype.XSDinteger);
+                        namesIndividual.add(CAPIndividual);
+                        metodterma.MetodTerm(conductingEquipment, CAPIndividual, hasCN, hasTerminal,hasName, model, NS, namesIndividual);
                         //String currentCAP = conductingEquipment.getName();
 //                    PARSING ???
 //                    hasCN, hasTerminal, hasVoltageLevel
@@ -396,7 +433,9 @@ public class TEST {
                     if (basicTypes.contains("MOT")) {
                         Individual MOTIndividual = model.createIndividual(NS + conductingEquipment.getName(), ZMOTClass);
                         MOTIndividual.addProperty(hasVoltageLevel, voltageIndividual);
-                        metodterma.MetodTerm(conductingEquipment, MOTIndividual, hasCN, hasTerminal, model, NS);
+                        MOTIndividual.addProperty(hasVoltage,VOL1, XSDDatatype.XSDinteger);
+                        namesIndividual.add(MOTIndividual);
+                        metodterma.MetodTerm(conductingEquipment, MOTIndividual, hasCN, hasTerminal, hasName, model, NS, namesIndividual);
 //                        String currentMOT = conductingEquipment.getName();
                         //__________________________________________________________________________________
                         //PARSING MOT
@@ -420,16 +459,20 @@ public class TEST {
                     if (basicTypes.contains("REA")) {
                         Individual REAIndividual = model.createIndividual(NS + conductingEquipment.getName(), ZREAClass);
                         REAIndividual.addProperty(hasVoltageLevel, voltageIndividual);
-                        metodterma.MetodTerm(conductingEquipment, REAIndividual, hasCN, hasTerminal, model, NS);
+                        REAIndividual.addProperty(hasVoltage,VOL1, XSDDatatype.XSDinteger);
+                        namesIndividual.add(REAIndividual);
+                        metodterma.MetodTerm(conductingEquipment, REAIndividual, hasCN, hasTerminal, hasName, model, NS, namesIndividual);
                         for (TLNode realnode : conductingEquipment.getLNode()) {
                             List<String> LTClass = realnode.getLnClass();
                             if (LTClass.contains("YPSH")) {
                                 Individual YPSHIndividual = model.createIndividual(NS + realnode.getLnClass().toString(), YPSHClass);
                                 YPSHIndividual.addProperty(partOf, REAIndividual);
+                                namesIndividual.add(YPSHIndividual);
                             }
                             if (LTClass.contains("YEFN")) {
                                 Individual YEFNIndividual = model.createIndividual(NS + realnode.getLnClass().toString(), YEFNClass);
                                 YEFNIndividual.addProperty(partOf, REAIndividual);
+                                namesIndividual.add(YEFNIndividual);
                             }
                         }
 //                        String currentREA = conductingEquipment.getName();
@@ -455,7 +498,9 @@ public class TEST {
                     if (basicTypes.contains("CTR")) {
                         Individual CTRIndividual = model.createIndividual(NS + conductingEquipment.getName(), TCTRClass);
                         CTRIndividual.addProperty(hasVoltageLevel, voltageIndividual);
-                        metodterma.MetodTerm(conductingEquipment, CTRIndividual, hasCN, hasTerminal, model, NS);
+                        CTRIndividual.addProperty(hasVoltage,VOL1, XSDDatatype.XSDinteger);
+                        namesIndividual.add(CTRIndividual);
+                        metodterma.MetodTerm(conductingEquipment, CTRIndividual, hasCN, hasTerminal, hasName ,model, NS, namesIndividual);
                         // String currentCTR = conductingEquipment.getName();
 //                      PARSING TCTR
 //                      hasCN, hasTerminal, hasVoltageLevel
@@ -479,7 +524,9 @@ public class TEST {
                     if (basicTypes.contains("VTR")) {
                         Individual VTRIndividual = model.createIndividual(NS + conductingEquipment.getName(), TVTRClass);
                         VTRIndividual.addProperty(hasVoltageLevel, voltageIndividual);
-                        metodterma.MetodTerm(conductingEquipment, VTRIndividual, hasCN, hasTerminal, model, NS);
+                        VTRIndividual.addProperty(hasVoltage,VOL1, XSDDatatype.XSDinteger);
+                        namesIndividual.add(VTRIndividual);
+                        metodterma.MetodTerm(conductingEquipment, VTRIndividual, hasCN, hasTerminal, hasName, model, NS, namesIndividual);
 //                        String currentVTR = conductingEquipment.getName();
 //                      PARSING TVTR
 //                      hasCN, hasTerminal, hasVoltageLevel
@@ -513,6 +560,7 @@ public class TEST {
 //                    String TEXT1 = text.getContent().toString();
                 if (text3.getContent().toString().equals("[AutoTransformers]")) {
                     Individual ATRIndividual = model.createIndividual(NS + powerTransformer.getName(), ATRClass);
+                    namesIndividual.add(ATRIndividual);
 
 //                    for (TTransformerWinding winding : powerTransformer.getTransformerWinding()) {
 //                        Individual PTWIndividual = model.createIndividual(NS + winding.getName() + "_" + powerTransformer.getName(), PTWClass);
@@ -543,11 +591,11 @@ public class TEST {
 //                            }
 //                        }
 //                    }
-                    metTR.MetodTerm(powerTransformer, ATRIndividual, hasCN, hasTerminal, model, NS);
+                    metTR.MetodTerm(powerTransformer, ATRIndividual, hasCN, hasTerminal, model, NS, hasName, namesIndividual);
                 }
                 if (text3.getContent().toString().equals("[ThreeWidningTransformers]")) {
                     Individual TTRIndividual = model.createIndividual(NS + powerTransformer.getName(), TTRClass);
-
+                    namesIndividual.add(TTRIndividual);
 //                    for (TTransformerWinding winding : powerTransformer.getTransformerWinding()) {
 //                        Individual PTWIndividual = model.createIndividual(NS + winding.getName() + "_" + powerTransformer.getName(), PTWClass);
 //                        TTRIndividual.addProperty(hasPTW, winding.getName() + "_" + powerTransformer.getName());
@@ -577,11 +625,11 @@ public class TEST {
 //                            }
 //                        }
 //                    }
-                    metTR.MetodTerm(powerTransformer, TTRIndividual, hasCN, hasTerminal, model, NS);
+                    metTR.MetodTerm(powerTransformer, TTRIndividual, hasCN, hasTerminal, model, NS, hasName, namesIndividual);
                 }
                 if (text3.getContent().toString().equals("[TwoWidningTransformers]")) {
                     Individual TRIndividual = model.createIndividual(NS + powerTransformer.getName(), TRClass);
-
+                    namesIndividual.add(TRIndividual);
 //                    for (TTransformerWinding winding : powerTransformer.getTransformerWinding()) {
 //                        Individual PTWIndividual = model.createIndividual(NS + winding.getName() + "_" + powerTransformer.getName(), PTWClass);
 //                        TRIndividual.addProperty(hasPTW, winding.getName() + "_" + powerTransformer.getName());
@@ -611,7 +659,7 @@ public class TEST {
 //                            }
 //                        }
 //                    }
-                    metTR.MetodTerm(powerTransformer, TRIndividual, hasCN, hasTerminal, model, NS);
+                    metTR.MetodTerm(powerTransformer, TRIndividual, hasCN, hasTerminal, model, NS, hasName, namesIndividual);
                 }
             }
 //                for (TLNode trlnode : powerTransformer.getLNode()) {
@@ -655,8 +703,38 @@ public class TEST {
             //}
             //}
         }
+        int k = 1;
+        for (Individual i : namesIndividual) {
+            k++;
+            i.addProperty(hasName,k+"", XSDDatatype.XSDinteger);
+        }
+
+        Collections.sort(voltageValues);
+        Collections.reverse(voltageValues);
+        int number = 1;
+        for (int i=0 ; i<voltageValues.size(); i++) {
+            for (Individual j : voltageeIndividual) {
+               String[] voltT = j.getURI().toString().split("#");
+//                System.out.println("!!-----------------");
+//                System.out.println(j);
+                int nVolt = Integer.parseInt(voltT[1]);
+              //   System.out.println("!!!" + nVolt);
+                if (nVolt == voltageValues.get(i)){
+
+                    j.addProperty(voltageType,number+"",XSDDatatype.XSDinteger);
+                }
+            }
+            if (voltageValues.size()==3){
+                number++;
+            }
+            else if (voltageValues.size()==2){
+                number= number+2;
+            }
+        }
+        // сохранение (запись) модели в выходной файл
         try {
-            FileOutputStream fileOutputStream = new FileOutputStream("C:\\Users\\diana\\Desktop\\SCL\\ont__052019.owl");
+           // FileOutputStream fileOutputStream = new FileOutputStream("C:\\Users\\anast\\Desktop\\magistratura\\project\\ontologies\\ont_PS2_pig.owl");
+            FileOutputStream fileOutputStream = new FileOutputStream("C:\\Users\\anast\\Desktop\\magistratura\\project\\ontologies\\ont_PS3_pig.owl");
             model.write(fileOutputStream);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
